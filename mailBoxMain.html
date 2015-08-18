@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+    <head>
+	    <meta charset="utf-8">
+	    <title></title>
+        <link rel="stylesheet" href="bootstrap-3.3.5-dist/css/bootstrap.css">
+        <style>
+
+            #recieveBox{
+                font-family: "impact"; 
+                color: black;
+                font-size: 60pt;
+                 
+            }
+            
+            body{
+                font: white;
+                font-family: "impact";
+            }
+            
+        </style>
+    </head>
+    <body background="wallpaper/Web_BG.png" >
+       <div class="col-md-2 col-md-offset-10">
+           <iframe src="http://free.timeanddate.com/clock/i4sawlt4/n28/tluk/fn6/fs20/ftb/pa4/tt0/tw0/tm1/tb4" frameborder="0" width="130" height="56"></iframe>
+
+       </div>
+
+       <div id="bar" class="col-md-12 text-center">
+           <h2>Mail Recieving</h2>
+       </div>
+
+        <div class="container" id="firstPage">
+<!--
+            <div class = "row" >
+                Click <a href="ParkingLot.html">
+                <button>Here</button></a> 
+            </div> 
+-->
+           <br></br>
+            <div class="row">
+                <div class="col-md-12 text-center">
+                    <a href="passwordEntering.html">
+                        <button id="enterBtn" class="btn btn-defualt">Enter Code</button>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+        <br></br>
+        <div class="container" id="answerPage">
+            <div class = "row" >
+                <div id="recieveBox" class="col-md-12 text-center">XXXX </div>
+                <div class="col-md-12 text-center">have arrived. Doyou want to recieve it?</div>
+                <div class="col-md-12 text-center">
+                    <button id="yesBtn" class="btn btn-success">Yes</button>
+                    <button id="noBtn" class="btn btn-danger">No</button>
+                </div> 
+            </div> 
+            
+
+        </div>
+
+        <script src="jquery-2.1.4.min.js"></script>
+
+        <script>
+            var yesBtn = $("#yesBtn");
+            var noBtn = $("#noBtn");
+            var answerPart = $("#answerPage");
+            var passwords;
+            var isValid = false; 
+            var temp = "";
+            var firstPage = $("#firstPage");
+            var TextBox = $("#recieveBox");
+            var lastPass;
+            var pass;
+            var temp2;
+            var theNode;
+            var command;
+            var isFirstRound = true;
+            var myTimeout;
+            var timeOut = 50000;
+            answerPart.hide();
+            
+            function init(){
+                passwords = "";
+                isValid = false;
+                temp = "";
+                temp2 = "";
+                pass = "";
+                theNode = "";
+                command = "";
+                answerPart.hide();
+            }
+            
+           
+            
+            function refresh(){
+                $.get("http://exceed.cupco.de/iot/kculdees/passwordForSender",checkChange);
+
+            }
+            
+            setInterval(refresh,1000);
+            
+            /*for checking if there is any change*/
+            function checkChange(massage){
+                if(massage == lastPass || isFirstRound)
+                {
+                    lastPass = massage;
+                    isFirstRound = false;
+                    return;
+                }
+                lastPass = massage;
+                console.log(lastPass);
+                startProcess();
+            }
+            
+            /*start the whole process when there is some change*/
+            function startProcess(){
+                getPass();
+            }
+            
+            function getPass(){
+                $.get("http://exceed.cupco.de/iot/kculdees/password",onGetData);
+            }
+            
+            function onGetData(massage){
+                temp = massage;
+                passwords = temp.split("_");
+                checkPass();
+                giveTask();    
+            }
+            
+             function checkPass(){
+                 console.log("go");
+                for(var i=0;i<passwords.length;i++){
+                    temp2 = passwords[i].split("@");
+                    console.log(temp2[0]+":"+lastPass);
+                    if(lastPass==temp2[0]){ 
+                        isValid = true;
+                        theNode = i;
+                        
+                        console.log(theNode);
+                        return;
+                    }
+                }
+            }
+            
+            function giveTask(){
+                if(isValid){
+                    startWorking();
+                }else{
+                    alert();
+                }
+            }
+            
+            /*start answering process*/
+            function startWorking(){
+                TextBox.text(temp2[1]);
+                console.log(temp2[1]);
+                answerPart.show();
+                myTimeout = window.setTimeout(noPress, timeOut);
+                //to do tell the sender
+            }
+            
+            function alert()
+            {   
+                //to do tell the sender
+                command = "3";
+                tellSender();
+            }
+
+            function yesPress(){
+                //tell Machine
+                
+                //tell sender.
+                command = "1";
+                clearTimeout(myTimeout);
+                removePass();
+            }
+            
+            function removePass(){
+                temp = ""
+                for(var i = 0 ; i<passwords.length;i++){
+                    if(i!=theNode)
+                        temp+=("_"+passwords[i]);
+                }
+                console.log(temp);
+                $.post("http://exceed.cupco.de/iot/kculdees/password",{data: temp});
+                tellSender();
+            }
+            
+            function noPress(){
+                //tell sender
+                command = "2";
+                clearTimeout(myTimeout);
+                tellSender();
+            }
+            
+            function tellSender(){
+                $.post("http://exceed.cupco.de/iot/kculdees/webToSender",{data: command});
+                init();
+            }
+            
+            yesBtn.click(yesPress);
+            noBtn.click(noPress);
+//            function some(){
+//                console.log(MTO);
+//            }
+//            
+//            var MTO =  window.setTimeout(some,1500);
+        </script>
+    </body>
+</html>
